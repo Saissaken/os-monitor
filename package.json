@@ -1,0 +1,23 @@
+{
+  "name": "os-monitor",
+  "version": "1.0.0",
+  "description": "macOS Menu Bar CPU Monitor",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "bun build src/main.ts --target=node --format=cjs --external=electron --external=macos-temperature-sensor --outfile=dist/main.js --watch & nodemon --watch dist/main.js --exec 'electron .'",
+    "build": "bun build src/main.ts --target=node --format=cjs --external=electron --external=macos-temperature-sensor --outfile=dist/main.js",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "macos-temperature-sensor": "^1.0.4",
+    "systeminformation": "^5.23.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "@types/node": "^22.0.0",
+    "nodemon": "^3.0.0"
+  },
+  "trustedDependencies": [
+    "macos-temperature-sensor"
+  ]
+}
