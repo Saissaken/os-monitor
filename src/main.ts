@@ -1,4 +1,4 @@
-import { app, Tray, Menu } from "electron";
+import { app, Tray, Menu, Notification } from "electron";
 import { autoUpdater } from "electron-updater";
 import si from "systeminformation";
 import path from "path";
@@ -9,8 +9,25 @@ app.whenReady().then(async () => {
   const tray = new Tray(path.join(__dirname, "../resources/icon.png"));
   tray.setTitle("…");
 
-  let updateReady = false;
-  autoUpdater.on('update-downloaded', () => { updateReady = true; });
+  type UpdateStatus = 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'uptodate' | 'error';
+  let updateStatus: UpdateStatus = 'idle';
+  autoUpdater.on('checking-for-update',  () => { updateStatus = 'checking'; });
+  autoUpdater.on('update-available',     () => { updateStatus = 'available'; });
+  autoUpdater.on('download-progress',    () => { updateStatus = 'downloading'; });
+  autoUpdater.on('update-not-available', () => {
+    updateStatus = 'uptodate';
+    new Notification({ title: 'OS Monitor', body: "You're up to date." }).show();
+    setTimeout(() => { if (updateStatus === 'uptodate') updateStatus = 'idle'; }, 5000);
+  });
+  autoUpdater.on('update-downloaded', () => {
+    updateStatus = 'ready';
+    new Notification({ title: 'OS Monitor', body: 'Update downloaded — open the menu to restart.' }).show();
+  });
+  autoUpdater.on('error', (_e, message) => {
+    updateStatus = 'error';
+    new Notification({ title: 'OS Monitor', body: `Update check failed: ${message ?? 'unknown error'}` }).show();
+    setTimeout(() => { if (updateStatus === 'error') updateStatus = 'idle'; }, 5000);
+  });
   autoUpdater.checkForUpdates().catch(() => {});
 
   const [cpu, graphics, defaultIfaceName, defaultIfaceInfo, publicIpText] = await Promise.all([
@@ -46,6 +63,18 @@ app.whenReady().then(async () => {
 
   function pingEmoji(ms: number): string {
     return ms >= 150 ? "🔴" : ms >= 50 ? "🟡" : "🟢";
+  }
+
+  function updateMenuItem(): Electron.MenuItemConstructorOptions {
+    switch (updateStatus) {
+      case 'checking':    return { label: 'Checking for updates…', enabled: false };
+      case 'available':   return { label: 'Downloading update…', enabled: false };
+      case 'downloading': return { label: 'Downloading update…', enabled: false };
+      case 'ready':       return { label: 'Restart to install update', click: () => autoUpdater.quitAndInstall() };
+      case 'uptodate':    return { label: 'Up to date', enabled: false };
+      case 'error':       return { label: 'Update check failed — retry', click: () => { updateStatus = 'idle'; autoUpdater.checkForUpdates().catch(() => {}); } };
+      default:            return { label: 'Check for Updates', click: () => autoUpdater.checkForUpdates().catch(() => {}) };
+    }
   }
 
   async function update() {
@@ -152,10 +181,8 @@ app.whenReady().then(async () => {
               ...(ping != null ? [{ label: `  ${pingEmoji(pingMs)} Ping: ${ping}`, enabled: false }] : []),
             ]
           : []),
-        ...(updateReady ? [
-          { type: 'separator' as const },
-          { label: 'Reiniciar para instalar actualización', click: () => autoUpdater.quitAndInstall() },
-        ] : []),
+        { type: "separator" as const },
+        updateMenuItem(),
         { type: "separator" as const },
         { label: "Quit", role: "quit" },
       ])
