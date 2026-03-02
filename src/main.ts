@@ -2,6 +2,7 @@ import { app, Tray, Menu, Notification } from "electron";
 import { autoUpdater } from "electron-updater";
 import si from "systeminformation";
 import path from "path";
+import fs from "fs";
 
 app.on("window-all-closed", () => {
   // keep running as tray-only app on all platforms
@@ -9,6 +10,12 @@ app.on("window-all-closed", () => {
 
 app.whenReady().then(async () => {
   app.dock?.hide();
+
+  const firstRunFlag = path.join(app.getPath('userData'), '.first-run-done');
+  if (!fs.existsSync(firstRunFlag) && app.isPackaged) {
+    app.setLoginItemSettings({ openAtLogin: true });
+    fs.writeFileSync(firstRunFlag, '');
+  }
 
   const iconPath = app.isPackaged
     ? path.join(process.resourcesPath, "icon.png")
@@ -192,7 +199,16 @@ app.whenReady().then(async () => {
         { type: "separator" as const },
         updateMenuItem(),
         { type: "separator" as const },
-        { label: "Quit", role: "quit" },
+        {
+          label: 'Launch at Login',
+          type: 'checkbox' as const,
+          checked: app.isPackaged && app.getLoginItemSettings().openAtLogin,
+          enabled: app.isPackaged,
+          click: (item: Electron.MenuItem) => {
+            app.setLoginItemSettings({ openAtLogin: item.checked });
+          },
+        },
+        { label: "Quit", role: "quit" as const },
       ])
     );
   }
