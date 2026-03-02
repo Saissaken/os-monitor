@@ -1,8 +1,12 @@
-import { app, Tray, Menu, Notification } from "electron";
+import { app, Tray, Menu, Notification, shell } from "electron";
 import { autoUpdater } from "electron-updater";
 import si from "systeminformation";
 import path from "path";
 import fs from "fs";
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+}
 
 app.on("window-all-closed", () => {
   // keep running as tray-only app on all platforms
@@ -10,6 +14,20 @@ app.on("window-all-closed", () => {
 
 app.whenReady().then(async () => {
   app.dock?.hide();
+
+  const logPath = path.join(app.getPath('userData'), 'os-monitor.log');
+  function log(msg: string) {
+    const line = `${new Date().toISOString()}  ${msg}\n`;
+    try { fs.appendFileSync(logPath, line); } catch {}
+  }
+
+  process.on('uncaughtException', (err) => {
+    log(`UNCAUGHT EXCEPTION: ${err.stack ?? err.message}`);
+  });
+  process.on('unhandledRejection', (reason) => {
+    log(`UNHANDLED REJECTION: ${reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)}`);
+  });
+  log('app ready');
 
   const firstRunFlag = path.join(app.getPath('userData'), '.first-run-done');
   if (!fs.existsSync(firstRunFlag) && app.isPackaged) {
@@ -26,22 +44,26 @@ app.whenReady().then(async () => {
 
   type UpdateStatus = 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'uptodate' | 'error';
   let updateStatus: UpdateStatus = 'idle';
-  autoUpdater.on('checking-for-update',  () => { updateStatus = 'checking'; });
+  autoUpdater.on('checking-for-update',  () => { log('checking-for-update'); updateStatus = 'checking'; });
   autoUpdater.on('update-available',     (info) => {
+    log(`update-available: v${info.version}`);
     updateStatus = 'available';
     new Notification({ title: 'OS Monitor', body: `Update v${info.version} available, downloading…` }).show();
   });
-  autoUpdater.on('download-progress',    () => { updateStatus = 'downloading'; });
+  autoUpdater.on('download-progress',    () => { log('download-progress'); updateStatus = 'downloading'; });
   autoUpdater.on('update-not-available', () => {
+    log('update-not-available');
     updateStatus = 'uptodate';
     new Notification({ title: 'OS Monitor', body: `v${app.getVersion()} — you're up to date.` }).show();
     setTimeout(() => { if (updateStatus === 'uptodate') updateStatus = 'idle'; }, 5000);
   });
   autoUpdater.on('update-downloaded', () => {
+    log('update-downloaded');
     updateStatus = 'ready';
     new Notification({ title: 'OS Monitor', body: 'Update downloaded — open the menu to restart.' }).show();
   });
   autoUpdater.on('error', (_e, message) => {
+    log(`updater error: ${message}`);
     updateStatus = 'error';
     new Notification({ title: 'OS Monitor', body: `Update check failed: ${message ?? 'unknown error'}` }).show();
     setTimeout(() => { if (updateStatus === 'error') updateStatus = 'idle'; }, 5000);
@@ -96,6 +118,7 @@ app.whenReady().then(async () => {
   }
 
   async function update() {
+    try {
     const [load, mem, temp, gpuGraphics, fsSizes, fsStats, netStats] = await Promise.all([
       si.currentLoad(),
       si.mem(),
@@ -211,9 +234,13 @@ app.whenReady().then(async () => {
             app.setLoginItemSettings({ openAtLogin: item.checked });
           },
         },
+        { label: 'Open Log…', click: () => shell.openPath(logPath) },
         { label: "Quit", role: "quit" as const },
       ])
     );
+    } catch (err: any) {
+      log(`update() threw: ${err?.stack ?? err?.message ?? String(err)}`);
+    }
   }
 
   let lastPingMs: number = -1;
