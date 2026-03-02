@@ -10,7 +10,8 @@
     "package": "electron-builder --publish never"
   },
   "dependencies": {
-    "systeminformation": "^5.23.0"
+    "systeminformation": "^5.23.0",
+    "electron-updater": "^6.0.0"
   },
   "optionalDependencies": {
     "macos-temperature-sensor": "^1.0.4"
@@ -35,8 +36,13 @@
       "dist/**/*",
       "resources/**/*"
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "saissaken",
+      "repo": "os-monitor"
+    },
     "mac": {
-      "target": "dmg",
+      "target": ["dmg", "zip"],
       "category": "public.app-category.utilities"
     },
     "win": {

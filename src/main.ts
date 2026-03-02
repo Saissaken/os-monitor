@@ -1,4 +1,5 @@
 import { app, Tray, Menu } from "electron";
+import { autoUpdater } from "electron-updater";
 import si from "systeminformation";
 import path from "path";
 
@@ -7,6 +8,10 @@ app.whenReady().then(async () => {
 
   const tray = new Tray(path.join(__dirname, "../resources/icon.png"));
   tray.setTitle("…");
+
+  let updateReady = false;
+  autoUpdater.on('update-downloaded', () => { updateReady = true; });
+  autoUpdater.checkForUpdates().catch(() => {});
 
   const [cpu, graphics, defaultIfaceName, defaultIfaceInfo, publicIpText] = await Promise.all([
     si.cpu(),
@@ -29,6 +34,18 @@ app.whenReady().then(async () => {
 
   function levelEmoji(n: number): string {
     return n >= 80 ? "🔴" : n >= 50 ? "🟡" : "🟢";
+  }
+
+  function ioEmoji(mbps: number): string {
+    return mbps >= 100 ? "🔴" : mbps >= 10 ? "🟡" : "🟢";
+  }
+
+  function netEmoji(kbps: number): string {
+    return kbps >= 10000 ? "🔴" : kbps >= 1000 ? "🟡" : "🟢";
+  }
+
+  function pingEmoji(ms: number): string {
+    return ms >= 150 ? "🔴" : ms >= 50 ? "🟡" : "🟢";
   }
 
   async function update() {
@@ -97,9 +114,8 @@ app.whenReady().then(async () => {
         { label: `  ${levelEmoji(cpuUsage)} ${cpuBar(cpuUsage)}  ${cpuUsage}%`, enabled: false },
         ...(cpuTemp ? [{ label: `  ${levelEmoji(temp.main!)} Temp: ${cpuTemp}`, enabled: false }] : []),
         { type: "separator" },
-        { label: "RAM", enabled: false },
-        { label: `  Used:  ${ramUsedGB} / ${ramTotalGB} GB`, enabled: false },
-        { label: `  Usage: ${ramPct}%`, enabled: false },
+        { label: `RAM · ${ramUsedGB} / ${ramTotalGB} GB`, enabled: false },
+        { label: `  ${levelEmoji(ramPct)} ${cpuBar(ramPct)}  ${ramPct}%`, enabled: false },
         ...(gpuAvailable
           ? [
               { type: "separator" as const },
@@ -116,11 +132,10 @@ app.whenReady().then(async () => {
         ...(diskPct != null
           ? [
               { type: "separator" as const },
-              { label: "Disk", enabled: false },
-              { label: `  Space: ${diskUsedGB} / ${diskTotalGB} GB`, enabled: false },
-              { label: `  Usage: ${diskPct}%`, enabled: false },
+              { label: `Disk · ${diskUsedGB} / ${diskTotalGB} GB`, enabled: false },
+              { label: `  ${levelEmoji(diskPct)} ${cpuBar(diskPct)}  ${diskPct}%`, enabled: false },
               ...(readMBs != null && writeMBs != null
-                ? [{ label: `  R: ${readMBs} MB/s  W: ${writeMBs} MB/s`, enabled: false }]
+                ? [{ label: `  ${ioEmoji(parseFloat(readMBs))} R: ${readMBs} MB/s  ${ioEmoji(parseFloat(writeMBs))} W: ${writeMBs} MB/s`, enabled: false }]
                 : []),
             ]
           : []),
@@ -132,11 +147,15 @@ app.whenReady().then(async () => {
               ...(netPrivateIp ? [{ label: `  Private: ${netPrivateIp}`, enabled: false }] : []),
               ...(netPublicIp ? [{ label: `  Public:  ${netPublicIp}`, enabled: false }] : []),
               ...(netRxKBs != null && netTxKBs != null
-                ? [{ label: `  ↓ ${netRxKBs} KB/s  ↑ ${netTxKBs} KB/s`, enabled: false }]
+                ? [{ label: `  ${netEmoji(parseFloat(netRxKBs))} ↓ ${netRxKBs} KB/s  ${netEmoji(parseFloat(netTxKBs))} ↑ ${netTxKBs} KB/s`, enabled: false }]
                 : []),
-              ...(ping != null ? [{ label: `  Ping: ${ping}`, enabled: false }] : []),
+              ...(ping != null ? [{ label: `  ${pingEmoji(pingMs)} Ping: ${ping}`, enabled: false }] : []),
             ]
           : []),
+        ...(updateReady ? [
+          { type: 'separator' as const },
+          { label: 'Reiniciar para instalar actualización', click: () => autoUpdater.quitAndInstall() },
+        ] : []),
         { type: "separator" as const },
         { label: "Quit", role: "quit" },
       ])
