@@ -3,11 +3,19 @@ import { autoUpdater } from "electron-updater";
 import si from "systeminformation";
 import path from "path";
 
+app.on("window-all-closed", () => {
+  // keep running as tray-only app on all platforms
+});
+
 app.whenReady().then(async () => {
   app.dock?.hide();
 
-  const tray = new Tray(path.join(__dirname, "../resources/icon.png"));
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, "icon.png")
+    : path.join(__dirname, "../resources/icon.png");
+  const tray = new Tray(iconPath);
   tray.setTitle("…");
+  tray.setToolTip("OS Monitor");
 
   type UpdateStatus = 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'uptodate' | 'error';
   let updateStatus: UpdateStatus = 'idle';
@@ -78,7 +86,7 @@ app.whenReady().then(async () => {
   }
 
   async function update() {
-    const [load, mem, temp, gpuGraphics, fsSizes, fsStats, netStats, pingMs] = await Promise.all([
+    const [load, mem, temp, gpuGraphics, fsSizes, fsStats, netStats] = await Promise.all([
       si.currentLoad(),
       si.mem(),
       si.cpuTemperature(),
@@ -86,8 +94,8 @@ app.whenReady().then(async () => {
       si.fsSize(),
       si.fsStats(),
       si.networkStats(defaultIfaceName),
-      si.inetLatency(),
     ]);
+    const pingMs = lastPingMs;
 
     const cpuUsage = Math.round(load.currentLoad * 10) / 10;
     const cpuHot = cpuUsage >= 80;
@@ -133,9 +141,9 @@ app.whenReady().then(async () => {
     const diskPart = diskPct != null
       ? ` · Dsk:${diskPct}%${diskHot ? "⚠" : ""}`
       : "";
-    tray.setTitle(
-      `${cpuUsage}%${cpuHot ? "⚠" : ""} · ${ramUsedGB}G${ramHot ? "⚠" : ""}${gpuPart}${diskPart}`
-    );
+    const titleText = `${cpuUsage}%${cpuHot ? "⚠" : ""} · ${ramUsedGB}G${ramHot ? "⚠" : ""}${gpuPart}${diskPart}`;
+    tray.setTitle(titleText);      // macOS only — shows in menu bar
+    tray.setToolTip(titleText);    // all platforms — visible on hover
 
     tray.setContextMenu(
       Menu.buildFromTemplate([
@@ -189,8 +197,16 @@ app.whenReady().then(async () => {
     );
   }
 
+  let lastPingMs: number = -1;
+  const refreshPing = () => si.inetLatency().then(ms => { lastPingMs = ms; }).catch(() => {});
+  refreshPing();
+  setInterval(refreshPing, 2000);
+
   await update();
   setInterval(update, 2000);
 
   tray.on("click", () => tray.popUpContextMenu());
+}).catch((err) => {
+  console.error("Fatal init error:", err);
+  app.quit();
 });

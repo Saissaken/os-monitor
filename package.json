@@ -26,6 +26,9 @@
     "macos-temperature-sensor"
   ],
   "build": {
+    "extraResources": [
+      { "from": "resources/icon.png", "to": "icon.png" }
+    ],
     "appId": "com.saissaken.os-monitor",
     "productName": "OS Monitor",
     "icon": "resources/icon-512.png",
