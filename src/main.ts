@@ -153,20 +153,21 @@ app.whenReady().then(async () => {
       ? ` · GPU:${gpuUsage}%${gpuHot ? "⚠" : ""}`
       : "";
 
+    const fsSizesArr = Array.isArray(fsSizes) ? fsSizes : [];
     const rootFs =
-      fsSizes.find((f) => f.mount === "/System/Volumes/Data") ??
-      fsSizes.find((f) => f.mount === "/") ??
-      fsSizes.find((f) => /^[A-Za-z]:[/\\]?$/.test(f.mount)) ??
-      fsSizes.sort((a, b) => b.size - a.size)[0] ??
+      fsSizesArr.find((f) => f.mount === "/System/Volumes/Data") ??
+      fsSizesArr.find((f) => f.mount === "/") ??
+      fsSizesArr.find((f) => /^[A-Za-z]:[/\\]?$/.test(f.mount)) ??
+      fsSizesArr.sort((a, b) => b.size - a.size)[0] ??
       null;
     const diskUsedGB  = rootFs ? (rootFs.used / 1024 ** 3).toFixed(1) : null;
     const diskTotalGB = rootFs ? (rootFs.size / 1024 ** 3).toFixed(1) : null;
     const diskPct     = rootFs ? Math.round(rootFs.use) : null;
     const diskHot     = diskPct != null && diskPct >= 90;
-    const readMBs  = fsStats.rx_sec != null ? (fsStats.rx_sec  / 1024 ** 2).toFixed(1) : null;
-    const writeMBs = fsStats.wx_sec != null ? (fsStats.wx_sec  / 1024 ** 2).toFixed(1) : null;
+    const readMBs  = fsStats?.rx_sec != null ? (fsStats.rx_sec  / 1024 ** 2).toFixed(1) : null;
+    const writeMBs = fsStats?.wx_sec != null ? (fsStats.wx_sec  / 1024 ** 2).toFixed(1) : null;
 
-    const net = netStats[0] ?? null;
+    const net = (Array.isArray(netStats) ? netStats : [])[0] ?? null;
     const netRxKBs = net?.rx_sec != null ? (net.rx_sec / 1024).toFixed(1) : null;
     const netTxKBs = net?.tx_sec != null ? (net.tx_sec / 1024).toFixed(1) : null;
     const ping = pingMs > 0 ? `${Math.round(pingMs)} ms` : null;
