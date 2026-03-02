@@ -26,6 +26,7 @@
     "macos-temperature-sensor"
   ],
   "build": {
+    "afterPack": "./build/afterPack.js",
     "extraResources": [
       { "from": "resources/icon.png", "to": "icon.png" }
     ],
