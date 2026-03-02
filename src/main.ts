@@ -22,8 +22,13 @@ app.whenReady().then(async () => {
   const netPrivateIp = (defaultIfaceInfo as any)?.ip4 ?? null;
   const netPublicIp = publicIpText?.trim() ?? null;
 
+  function cpuBar(pct: number): string {
+    const filled = Math.round(pct / 100 * 20);
+    return "█".repeat(filled) + "▒".repeat(20 - filled);
+  }
+
   async function update() {
-    const [load, mem, temp, gpuGraphics, fsSizes, fsStats, netStats] = await Promise.all([
+    const [load, mem, temp, gpuGraphics, fsSizes, fsStats, netStats, pingMs] = await Promise.all([
       si.currentLoad(),
       si.mem(),
       si.cpuTemperature(),
@@ -31,6 +36,7 @@ app.whenReady().then(async () => {
       si.fsSize(),
       si.fsStats(),
       si.networkStats(defaultIfaceName),
+      si.inetLatency(),
     ]);
 
     const cpuUsage = Math.round(load.currentLoad * 10) / 10;
@@ -56,9 +62,12 @@ app.whenReady().then(async () => {
       ? ` · GPU:${gpuUsage}%${gpuHot ? "⚠" : ""}`
       : "";
 
-    const rootFs = fsSizes.find((f) => f.mount === "/")
-      ?? fsSizes.sort((a, b) => b.size - a.size)[0]
-      ?? null;
+    const rootFs =
+      fsSizes.find((f) => f.mount === "/System/Volumes/Data") ??
+      fsSizes.find((f) => f.mount === "/") ??
+      fsSizes.find((f) => /^[A-Za-z]:[/\\]?$/.test(f.mount)) ??
+      fsSizes.sort((a, b) => b.size - a.size)[0] ??
+      null;
     const diskUsedGB  = rootFs ? (rootFs.used / 1024 ** 3).toFixed(1) : null;
     const diskTotalGB = rootFs ? (rootFs.size / 1024 ** 3).toFixed(1) : null;
     const diskPct     = rootFs ? Math.round(rootFs.use) : null;
@@ -69,6 +78,7 @@ app.whenReady().then(async () => {
     const net = netStats[0] ?? null;
     const netRxKBs = net?.rx_sec != null ? (net.rx_sec / 1024).toFixed(1) : null;
     const netTxKBs = net?.tx_sec != null ? (net.tx_sec / 1024).toFixed(1) : null;
+    const ping = pingMs > 0 ? `${Math.round(pingMs)} ms` : null;
 
     const diskPart = diskPct != null
       ? ` · Dsk:${diskPct}%${diskHot ? "⚠" : ""}`
@@ -80,7 +90,7 @@ app.whenReady().then(async () => {
     tray.setContextMenu(
       Menu.buildFromTemplate([
         { label: "CPU", enabled: false },
-        { label: `  Usage: ${cpuUsage}%`, enabled: false },
+        { label: `  ${cpuBar(cpuUsage)}  ${cpuUsage}%`, enabled: false },
         ...(cpuTemp ? [{ label: `  Temp:  ${cpuTemp}`, enabled: false }] : []),
         { label: `  Cores: ${cores}`, enabled: false },
         { type: "separator" },
@@ -121,6 +131,7 @@ app.whenReady().then(async () => {
               ...(netRxKBs != null && netTxKBs != null
                 ? [{ label: `  ↓ ${netRxKBs} KB/s  ↑ ${netTxKBs} KB/s`, enabled: false }]
                 : []),
+              ...(ping != null ? [{ label: `  Ping: ${ping}`, enabled: false }] : []),
             ]
           : []),
         { type: "separator" as const },
