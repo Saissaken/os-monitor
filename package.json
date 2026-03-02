@@ -39,7 +39,8 @@
     "publish": {
       "provider": "github",
       "owner": "saissaken",
-      "repo": "os-monitor"
+      "repo": "os-monitor",
+      "releaseType": "release"
     },
     "mac": {
       "target": ["dmg", "zip"],
