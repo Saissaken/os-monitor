@@ -27,6 +27,7 @@
   "build": {
     "appId": "com.saissaken.os-monitor",
     "productName": "OS Monitor",
+    "icon": "resources/icon-512.png",
     "directories": {
       "output": "release"
     },
@@ -36,16 +37,13 @@
     ],
     "mac": {
       "target": "dmg",
-      "icon": "resources/icon.png",
       "category": "public.app-category.utilities"
     },
     "win": {
-      "target": "nsis",
-      "icon": "resources/icon.png"
+      "target": "nsis"
     },
     "linux": {
-      "target": "AppImage",
-      "icon": "resources/icon.png"
+      "target": "AppImage"
     }
   }
 }

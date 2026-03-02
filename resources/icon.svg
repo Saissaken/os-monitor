@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Body -->
+  <rect x="22" y="22" width="56" height="56" rx="8" fill="#00C8C8"/>
+  <!-- Pins top/bottom (4 each side) -->
+  <rect x="30" y="13" width="6" height="10" fill="#00C8C8"/>
+  <rect x="41" y="13" width="6" height="10" fill="#00C8C8"/>
+  <rect x="52" y="13" width="6" height="10" fill="#00C8C8"/>
+  <rect x="63" y="13" width="6" height="10" fill="#00C8C8"/>
+  <rect x="30" y="77" width="6" height="10" fill="#00C8C8"/>
+  <rect x="41" y="77" width="6" height="10" fill="#00C8C8"/>
+  <rect x="52" y="77" width="6" height="10" fill="#00C8C8"/>
+  <rect x="63" y="77" width="6" height="10" fill="#00C8C8"/>
+  <!-- Pins left/right -->
+  <rect x="13" y="30" width="10" height="6" fill="#00C8C8"/>
+  <rect x="13" y="41" width="10" height="6" fill="#00C8C8"/>
+  <rect x="13" y="52" width="10" height="6" fill="#00C8C8"/>
+  <rect x="13" y="63" width="10" height="6" fill="#00C8C8"/>
+  <rect x="77" y="30" width="10" height="6" fill="#00C8C8"/>
+  <rect x="77" y="41" width="10" height="6" fill="#00C8C8"/>
+  <rect x="77" y="52" width="10" height="6" fill="#00C8C8"/>
+  <rect x="77" y="63" width="10" height="6" fill="#00C8C8"/>
+  <!-- Inner detail -->
+  <rect x="33" y="33" width="34" height="34" rx="4" fill="#009898"/>
+  <text x="50" y="56" text-anchor="middle" font-family="monospace" font-size="16" font-weight="bold" fill="#00FFFF">CPU</text>
+</svg>

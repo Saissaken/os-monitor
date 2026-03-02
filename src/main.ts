@@ -24,7 +24,11 @@ app.whenReady().then(async () => {
 
   function cpuBar(pct: number): string {
     const filled = Math.round(pct / 100 * 20);
-    return "█".repeat(filled) + "▒".repeat(20 - filled);
+    return "◼".repeat(filled) + "◻".repeat(20 - filled);
+  }
+
+  function levelEmoji(n: number): string {
+    return n >= 80 ? "🔴" : n >= 50 ? "🟡" : "🟢";
   }
 
   async function update() {
@@ -89,10 +93,9 @@ app.whenReady().then(async () => {
 
     tray.setContextMenu(
       Menu.buildFromTemplate([
-        { label: "CPU", enabled: false },
-        { label: `  ${cpuBar(cpuUsage)}  ${cpuUsage}%`, enabled: false },
-        ...(cpuTemp ? [{ label: `  Temp:  ${cpuTemp}`, enabled: false }] : []),
-        { label: `  Cores: ${cores}`, enabled: false },
+        { label: `CPU · ${cpu.brand} · ${cores} cores`, enabled: false },
+        { label: `  ${levelEmoji(cpuUsage)} ${cpuBar(cpuUsage)}  ${cpuUsage}%`, enabled: false },
+        ...(cpuTemp ? [{ label: `  ${levelEmoji(temp.main!)} Temp: ${cpuTemp}`, enabled: false }] : []),
         { type: "separator" },
         { label: "RAM", enabled: false },
         { label: `  Used:  ${ramUsedGB} / ${ramTotalGB} GB`, enabled: false },
