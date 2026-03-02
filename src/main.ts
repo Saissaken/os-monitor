@@ -27,11 +27,14 @@ app.whenReady().then(async () => {
   type UpdateStatus = 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'uptodate' | 'error';
   let updateStatus: UpdateStatus = 'idle';
   autoUpdater.on('checking-for-update',  () => { updateStatus = 'checking'; });
-  autoUpdater.on('update-available',     () => { updateStatus = 'available'; });
+  autoUpdater.on('update-available',     (info) => {
+    updateStatus = 'available';
+    new Notification({ title: 'OS Monitor', body: `Update v${info.version} available, downloading…` }).show();
+  });
   autoUpdater.on('download-progress',    () => { updateStatus = 'downloading'; });
   autoUpdater.on('update-not-available', () => {
     updateStatus = 'uptodate';
-    new Notification({ title: 'OS Monitor', body: "You're up to date." }).show();
+    new Notification({ title: 'OS Monitor', body: `v${app.getVersion()} — you're up to date.` }).show();
     setTimeout(() => { if (updateStatus === 'uptodate') updateStatus = 'idle'; }, 5000);
   });
   autoUpdater.on('update-downloaded', () => {
@@ -86,9 +89,9 @@ app.whenReady().then(async () => {
       case 'available':   return { label: 'Downloading update…', enabled: false };
       case 'downloading': return { label: 'Downloading update…', enabled: false };
       case 'ready':       return { label: 'Restart to install update', click: () => autoUpdater.quitAndInstall() };
-      case 'uptodate':    return { label: 'Up to date', enabled: false };
+      case 'uptodate':    return { label: `Up to date  (v${app.getVersion()})`, enabled: false };
       case 'error':       return { label: 'Update check failed — retry', click: () => { updateStatus = 'idle'; autoUpdater.checkForUpdates().catch(() => {}); } };
-      default:            return { label: 'Check for Updates', click: () => autoUpdater.checkForUpdates().catch(() => {}) };
+      default:            return { label: `Check for Updates  (v${app.getVersion()})`, click: () => autoUpdater.checkForUpdates().catch(() => {}) };
     }
   }
 
