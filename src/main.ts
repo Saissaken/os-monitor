@@ -44,7 +44,7 @@ app.whenReady().then(async () => {
 
   const iconPath = app.isPackaged
     ? path.join(process.resourcesPath, "icon.png")
-    : path.join(__dirname, "../resources/icon.png");
+    : path.join(__dirname, "../resources/icon-dev.png");
   const tray = new Tray(iconPath);
   tray.setTitle("…");
   tray.setToolTip("OS Monitor");
@@ -188,6 +188,7 @@ app.whenReady().then(async () => {
 
     tray.setContextMenu(
       Menu.buildFromTemplate([
+        ...(!app.isPackaged ? [{ label: "⚠ DEV BUILD", enabled: false }, { type: "separator" as const }] : []),
         { label: `CPU · ${cpu.brand} · ${cores} cores`, enabled: false },
         { label: `  ${levelEmoji(cpuUsage)} ${cpuBar(cpuUsage)}  ${cpuUsage}%`, enabled: false },
         ...(cpuTemp ? [{ label: `  ${levelEmoji(temp.main!)} Temp: ${cpuTemp}`, enabled: false }] : []),
