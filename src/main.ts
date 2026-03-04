@@ -6,6 +6,13 @@ import fs from "fs";
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
+} else {
+  app.on("second-instance", () => {
+    new Notification({
+      title: "OS Monitor",
+      body: "Already running in the menu bar.",
+    }).show();
+  });
 }
 
 app.on("window-all-closed", () => {
